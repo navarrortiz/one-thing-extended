@@ -2,18 +2,18 @@
 
 PREFIX ?= ${HOME}/.local
 
-UUID   ?= one-thing@github.com
+UUID   ?= one-thing-extended
 BUNDLE = ${UUID}.zip
 
 ASSETS  = $(wildcard assets/*)
-SCHEMAS = $(wildcard schemas/*/*.gschema.xml)
+SCHEMAS = $(wildcard schemas/*.gschema.xml)
+MODULES = $(shell find src -type f | sort)
 SOURCES = ${ASSETS} ${SCHEMAS} LICENSE entryMenu.js extension.js \
-	  metadata.json prefs.js prefs/hotkey.js \
-	  schemas/org.gnome.shell.extensions.one-thing.gschema.xml \
-	  stylesheet.css widget.js
+	  metadata.json prefs.js prefs/hotkey.js stylesheet.css widget.js ${MODULES}
 
 ${BUNDLE}: ${SOURCES} schemas/gschemas.compiled
-	zip -q "$@" $^
+	rm -f "$@"
+	zip -q "$@" ${SOURCES}
 
 schemas/gschemas.compiled: ${SCHEMAS}
 	glib-compile-schemas schemas/
@@ -23,8 +23,9 @@ clean:
 	rm -f schemas/gschemas.compiled
 
 install: ${BUNDLE}
-	@touch "${PREFIX}/share/gnome-shell/extensions/${UUID}"
-	rm -r "${PREFIX}/share/gnome-shell/extensions/${UUID}"
+	rm -rf "${PREFIX}/share/gnome-shell/extensions/${UUID}"
+	mkdir -p "${PREFIX}/share/gnome-shell/extensions/${UUID}"
 	unzip  -q "${BUNDLE}" -d "${PREFIX}/share/gnome-shell/extensions/${UUID}"
+	glib-compile-schemas "${PREFIX}/share/gnome-shell/extensions/${UUID}/schemas"
 
-schemas: schemas/gschemas.compile
+schemas: schemas/gschemas.compiled

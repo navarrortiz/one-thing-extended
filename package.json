@@ -1,4 +1,17 @@
 {
+  "scripts": {
+    "clean": "make clean",
+    "compile": "make",
+    "build": "npm run compile",
+    "install:extension": "make install",
+    "activate": "bash scripts/activate-extension.sh",
+    "deactivate": "gnome-extensions disable one-thing-extended || true",
+    "deactivate:old": "gnome-extensions disable one-thing@github.com || true",
+    "reinstall": "npm run compile && npm run install:extension",
+    "dev": "npm run deactivate:old && npm run reinstall && npm run activate",
+    "lint": "eslint 'src/**/*.js'",
+    "lint:fix": "eslint 'src/**/*.js' --fix"
+  },
   "devDependencies": {
     "eslint-plugin-jsdoc": "^46.8.2"
   }

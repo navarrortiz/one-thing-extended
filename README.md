@@ -1,4 +1,4 @@
-# One-Thing GNOME Extension
+# one-thing-extended GNOME Extension
 
 > Put a single task or goal in your menu bar.
 
@@ -6,7 +6,7 @@ One-Thing is a productivity tool that helps you stay focused on one task at a ti
 
 ## Installation
 
-You can install this extension from the GNOME Shell extensions store at <https://extensions.gnome.org/extension/5072/one-thing/>
+Install the local development build with `make install`.
 
 ## Scripting
 
@@ -14,7 +14,7 @@ For scripting it is useful to set the one-thing *(displayed task)* non-interacti
 This can be done via `dconf`.
 
 ```sh
-$ dconf write /org/gnome/shell/extensions/one-thing/thing-value "'My todo'"
+$ dconf write /org/gnome/shell/extensions/one-thing-extended/thing-value "'My todo'"
 ```
 
 ## Screenshots
@@ -43,7 +43,7 @@ the other installed extensions, so do what works for you!
 1. Clone this repository to `~/.local/share/gnome-shell/extensions`, so GNOME
    Shell can find it:
    ```sh
-   $ git clone git@github.com:one-thing-gnome/one-thing.git "${HOME}/.local/share/gnome-shell/extensions/one-thing@github.com"
+   $ git clone git@github.com:one-thing-gnome/one-thing.git "${HOME}/.local/share/gnome-shell/extensions/one-thing-extended"
    ```
 2. Build the GSettings schema cache with:
    ```sh
@@ -60,7 +60,7 @@ the other installed extensions, so do what works for you!
       ```
    2. For your user with an explicit development version co-installed
       ```sh
-      $ PACKAGE=one-thing-devel@github.com.zip make install
+      $ UUID=one-thing-extended-devel make install
       ```
    3. As system extension (not recommended)
       ```sh
@@ -93,5 +93,5 @@ $ dbus-run-session -- gnome-shell --nested --wayland
 
 ### Publishing the Extension
 
-Running `make` will create an extension bundle named `one-thing@github.com.zip` in the
+Running `make` will create an extension bundle named `one-thing-extended.zip` in the
 root of this folder. You can upload this to the GNOME extension store.

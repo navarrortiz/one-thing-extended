@@ -1,15 +1,16 @@
 {
-  "description": "Put a single task or goal in your menu bar",
-  "name": "One Thing",
-  "settings-schema": "org.gnome.shell.extensions.one-thing",
+  "description": "Put a single task or goal in your menu bar. Uses the clipboard for copy and paste in the editor.",
+  "name": "one-thing-extended",
+  "settings-schema": "org.gnome.shell.extensions.one-thing-extended",
   "shell-version": [
     "45",
     "46",
     "47",
     "48",
-    "49"
+    "49",
+    "50"
   ],
   "url": "https://github.com/dantehemerson/one-thing",
-  "uuid": "one-thing@github.com",
+  "uuid": "one-thing-extended",
   "version": 27
 }
