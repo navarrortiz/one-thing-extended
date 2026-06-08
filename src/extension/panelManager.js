@@ -14,9 +14,10 @@ const [major] = Config.PACKAGE_VERSION.split('.');
 const GNOME_MAJOR_VERSION = Number.parseInt(major);
 
 export default class PanelManager {
-    constructor(settings, dir) {
+    constructor(settings, dir, taskProviderManager) {
         this._settings = settings;
         this._dir = dir;
+        this._taskProviderManager = taskProviderManager;
         this._widget = null;
         this._actorAddedSignal = null;
         this._focusTimeoutId = null;
@@ -29,7 +30,11 @@ export default class PanelManager {
 
         this.destroy();
 
-        this._widget = new Widget(this._settings, this._dir);
+        this._widget = new Widget(
+            this._settings,
+            this._dir,
+            this._taskProviderManager
+        );
         Main.panel.addToStatusArea(STATUS_AREA_NAME, this._widget, index, location);
         this._syncRightBoxObserver();
     }
@@ -51,6 +56,10 @@ export default class PanelManager {
 
     syncPanelTextVisibility() {
         this._widget?.syncIconVisibility(this._settings.get_string(SETTINGS_KEYS.thingValue));
+    }
+
+    syncProviderMode() {
+        this._widget?.syncProviderMode();
     }
 
     destroy() {

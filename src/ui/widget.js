@@ -1,4 +1,5 @@
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
@@ -12,11 +13,12 @@ import {createPopupEntry} from './popupEntry.js';
 
 const Widget = new GObject.registerClass(
     class Widget extends PanelMenu.Button {
-        _init(settings, dir) {
+        _init(settings, dir, taskProviderManager) {
             super._init(0, 'AppWidget', false);
 
             this._settings = settings;
             this._dir = dir;
+            this._taskProviderManager = taskProviderManager;
             this._extension = Extension.lookupByURL(import.meta.url);
 
             this._buildUi();
@@ -24,7 +26,14 @@ const Widget = new GObject.registerClass(
         }
 
         _buildUi() {
-            this.panelText = createPanelText(this._settings);
+            this.panelText = createPanelText(
+                this._settings,
+                {
+                    canOpenFile: () => this._taskProviderManager.usesTextFileProvider(),
+                    onOpenFile: () => this._openConfiguredTextFile(),
+                    onOpenSettings: () => this._openPreferences(),
+                }
+            );
 
             const {inputText, menuItem} = createPopupEntry(
                 this._settings,
@@ -34,6 +43,7 @@ const Widget = new GObject.registerClass(
             this.inputText = inputText;
             this.menu.addMenuItem(menuItem);
             this._buildContainer();
+            this.syncProviderMode();
             this.syncIconVisibility(this.panelText.get_text());
         }
 
@@ -56,7 +66,9 @@ const Widget = new GObject.registerClass(
         }
 
         _connectEvents() {
-            this.connect('button-press-event', () => this.focusInput());
+            this.menu.connect('open-state-changed', (_menu, isOpen) => {
+                this._onMenuOpenStateChanged(isOpen);
+            });
             this.inputText.clutter_text.connect('activate', actor => {
                 this._onActivateEntry(actor);
             });
@@ -67,7 +79,29 @@ const Widget = new GObject.registerClass(
             this.menu.close();
         }
 
+        _onMenuOpenStateChanged(isOpen) {
+            if (!isOpen)
+                return;
+
+            if (!this._taskProviderManager.allowsManualEditing()) {
+                this.menu.close();
+                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
+                    this._openConfiguredTextFile();
+                    return GLib.SOURCE_REMOVE;
+                });
+                return;
+            }
+
+            this.focusInput();
+        }
+
         _onActivateEntry(actor) {
+            if (!this._taskProviderManager.allowsManualEditing()) {
+                this._taskProviderManager.sync();
+                this.menu.close();
+                return;
+            }
+
             const textValue = actor.get_text();
 
             this.syncIconVisibility(textValue);
@@ -82,10 +116,17 @@ const Widget = new GObject.registerClass(
             if (!this.menu.isOpen)
                 return;
 
+            this.syncProviderMode();
             this.inputText.grab_key_focus();
             this.inputText.set_text(text);
             if (text)
                 this.inputText.clutter_text.set_selection(-1, 0);
+        }
+
+        syncProviderMode() {
+            this.inputText.clutter_text.set_editable(
+                this._taskProviderManager.allowsManualEditing()
+            );
         }
 
         syncIconVisibility(text) {
@@ -93,6 +134,10 @@ const Widget = new GObject.registerClass(
                 this.icon.show();
             else
                 this.icon.hide();
+        }
+
+        _openConfiguredTextFile() {
+            return this._taskProviderManager.openConfiguredTextFile();
         }
     }
 );

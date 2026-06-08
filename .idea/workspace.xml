@@ -5,10 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="98b34b25-40da-4eec-8952-6a77094a049c" name="Changes" comment="feat(core): restructure extension into modular architecture">
-      <change afterPath="$PROJECT_DIR$/.idea/git_toolbox_prj.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/jsLinters/eslint.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/claudeCodeTabState.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/claudeCodeTabState.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/org.gnome.shell.extensions.one-thing-extended.gschema.xml" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/org.gnome.shell.extensions.one-thing-extended.gschema.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extension/controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/controller.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extension/panelManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/panelManager.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prefs/groups/text.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/prefs/groups/text.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prefs/page.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/prefs/page.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/shared/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/shared/constants.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ui/panelText.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/panelText.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ui/widget.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/widget.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -22,8 +28,54 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="dev" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;navarrortiz&quot;
+  }
+}</component>
+  <component name="GitToolBoxStore">
+    <option name="recentBranches">
+      <RecentBranches>
+        <option name="branchesForRepo">
+          <list>
+            <RecentBranchesForRepo>
+              <option name="branches">
+                <list>
+                  <RecentBranch>
+                    <option name="branchName" value="feature/txt-provider" />
+                    <option name="lastUsedInstant" value="1780691067" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="dev" />
+                    <option name="lastUsedInstant" value="1780691039" />
+                  </RecentBranch>
+                  <RecentBranch>
+                    <option name="branchName" value="main" />
+                    <option name="lastUsedInstant" value="1780691038" />
+                  </RecentBranch>
+                </list>
+              </option>
+              <option name="repositoryRootUrl" value="file://$PROJECT_DIR$" />
+            </RecentBranchesForRepo>
+          </list>
+        </option>
+      </RecentBranches>
+    </option>
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/navarrortiz/one-thing-extended.git&quot;,
+    &quot;accountId&quot;: &quot;c23565bb-54c6-422b-ab4f-1ef7399ce57c&quot;
+  }
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -36,30 +88,40 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
-    "javascript.preferred.runtime.type.id": "node",
-    "last_opened_file_path": "/home/tony/Proyectos/one-thing-extended",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.standard": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.standard": "",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "npm.lint.executor": "Run",
-    "settings.editor.selected.configurable": "settings.javascript.linters.eslint",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/txt-provider&quot;,
+    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/tony/Proyectos/one-thing-extended&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.standard&quot;: &quot;&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;npm.lint.executor&quot;: &quot;Run&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.linters.eslint&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RunManager">
+}</component>
+  <component name="RunManager" selected="npm.dev">
+    <configuration name="dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
     <configuration name="lint" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/package.json" />
       <command value="run" />
@@ -72,6 +134,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="npm.dev" />
         <item itemvalue="npm.lint" />
       </list>
     </recent_temporary>
@@ -96,7 +159,10 @@
       <workItem from="1779507146483" duration="1660000" />
       <workItem from="1779732446454" duration="1294000" />
       <workItem from="1780689326978" duration="740000" />
-      <workItem from="1780690088944" duration="313000" />
+      <workItem from="1780690088944" duration="1520000" />
+      <workItem from="1780693821343" duration="304000" />
+      <workItem from="1780695338929" duration="340000" />
+      <workItem from="1780695805709" duration="3156000" />
     </task>
     <task id="LOCAL-00001" summary="feat(core): restructure extension into modular architecture">
       <option name="closed" value="true" />
@@ -106,7 +172,15 @@
       <option name="project" value="LOCAL" />
       <updated>1780690171631</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="feat(core): restructure extension into modular architecture">
+      <option name="closed" value="true" />
+      <created>1780690669112</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1780690669112</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
