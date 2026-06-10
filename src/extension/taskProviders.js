@@ -60,6 +60,17 @@ class ManualTaskProvider {
     getCurrentThing() {
         return this._settings.get_string(SETTINGS_KEYS.thingValue);
     }
+
+    /**
+     * Gets upcoming things for manual provider.
+     *
+     * @param {number} _limit - Maximum number of items
+     * @param {number} _maxLineLength - Maximum length per item
+     * @returns {string[]} Empty list for manual provider
+     */
+    getNextThings(_limit, _maxLineLength) {
+        return [];
+    }
 }
 
 class TextFileTaskProvider {
@@ -81,14 +92,30 @@ class TextFileTaskProvider {
         if (!file)
             return '';
 
-        const [, contents] = file.load_contents(null);
-        const text = new TextDecoder('utf-8').decode(contents);
-
-        const line = text
-            .split(/\r?\n/)
-            .find(value => value.trim() !== '');
+        const lines = getNonEmptyLines(file);
+        const line = lines[0];
 
         return line?.trim() ?? '';
+    }
+
+    /**
+     * Gets the upcoming things from the configured text file.
+     *
+     * @param {number} [limit=5] - Maximum number of upcoming lines
+     * @param {number} [maxLineLength=90] - Maximum length per line
+     * @returns {string[]} Upcoming non-empty lines excluding the current thing
+     */
+    getNextThings(limit = 5, maxLineLength = 90) {
+        const file = getConfiguredTextFile(this._settings);
+
+        if (!file)
+            return [];
+
+        const lines = getNonEmptyLines(file);
+
+        return lines
+            .slice(1, limit + 1)
+            .map(value => truncateLine(value, maxLineLength));
     }
 }
 
@@ -105,4 +132,34 @@ export function getConfiguredTextFile(settings) {
         return null;
 
     return Gio.File.new_for_path(path);
+}
+
+/**
+ * Reads and returns non-empty trimmed lines from a file.
+ *
+ * @param {Gio.File} file - Source file
+ * @returns {string[]} Non-empty trimmed lines
+ */
+function getNonEmptyLines(file) {
+    const [, contents] = file.load_contents(null);
+    const text = new TextDecoder('utf-8').decode(contents);
+
+    return text
+        .split(/\r?\n/)
+        .map(value => value.trim())
+        .filter(value => value !== '');
+}
+
+/**
+ * Truncates a line to a fixed display length.
+ *
+ * @param {string} value - Raw line value
+ * @param {number} maxLength - Maximum displayed length
+ * @returns {string} Truncated or original line
+ */
+function truncateLine(value, maxLength) {
+    if (value.length <= maxLength)
+        return value;
+
+    return `${value.slice(0, maxLength - 1)}…`;
 }

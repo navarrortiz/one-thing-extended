@@ -80,10 +80,67 @@ export default class TaskProviderManager {
     }
 
     /**
-     * @returns {boolean} True when the text file provider is active
+     * @returns {boolean} True when text file provider is active
      */
-    usesTextFileProvider() {
+    isTextFileProvider() {
         return isTextFileTaskProvider(this._settings);
+    }
+
+    /**
+     * Gets the text-file popover data.
+     *
+     * @param {number} [limit=5] - Maximum number of upcoming lines
+     * @param {number} [maxLineLength=90] - Maximum length per line
+     * @returns {{fileName: string, canOpen: boolean, nextThings: string[]}} Popover data
+     */
+    getTextFilePopoverData(limit = 5, maxLineLength = 90) {
+        if (!this.isTextFileProvider()) {
+            return {
+                fileName: '',
+                canOpen: false,
+                nextThings: [],
+            };
+        }
+
+        const file = getConfiguredTextFile(this._settings);
+
+        if (!file) {
+            return {
+                fileName: '',
+                canOpen: false,
+                nextThings: [],
+            };
+        }
+
+        const fileName = file.get_basename() ?? '';
+        const canOpen = file.query_exists(null);
+
+        if (!canOpen) {
+            return {
+                fileName,
+                canOpen,
+                nextThings: [],
+            };
+        }
+
+        try {
+            const provider = createTaskProvider(this._settings);
+            const nextThings = provider.getNextThings(limit, maxLineLength);
+
+            this._clearLastError();
+            return {
+                fileName,
+                canOpen,
+                nextThings,
+            };
+        } catch (error) {
+            this._logProviderError(error);
+            return {
+                fileName,
+                canOpen,
+                nextThings: [],
+            };
+        }
     }
 
     _syncCurrentThing() {

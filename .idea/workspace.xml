@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98b34b25-40da-4eec-8952-6a77094a049c" name="Changes" comment="feat(core): restructure extension into modular architecture">
-      <change beforePath="$PROJECT_DIR$/.idea/claudeCodeTabState.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/claudeCodeTabState.xml" afterDir="false" />
+    <list default="true" id="98b34b25-40da-4eec-8952-6a77094a049c" name="Changes" comment="feat(core): add text file task provider support">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/metadata.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/schemas/org.gnome.shell.extensions.one-thing-extended.gschema.xml" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/org.gnome.shell.extensions.one-thing-extended.gschema.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/extension/controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/controller.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/extension/panelManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/panelManager.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prefs/groups/text.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/prefs/groups/text.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/prefs/page.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/prefs/page.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extension/taskProviderManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/taskProviderManager.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/extension/taskProviders.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/taskProviders.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/prefs/groups/provider.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/prefs/groups/provider.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/shared/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/shared/constants.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ui/panelText.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/panelText.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ui/widget.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/widget.js" afterDir="false" />
@@ -30,7 +30,7 @@
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
-        <entry key="$PROJECT_DIR$" value="dev" />
+        <entry key="$PROJECT_DIR$" value="main" />
       </map>
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -50,12 +50,8 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="feature/txt-provider" />
-                    <option name="lastUsedInstant" value="1780691067" />
-                  </RecentBranch>
-                  <RecentBranch>
                     <option name="branchName" value="dev" />
-                    <option name="lastUsedInstant" value="1780691039" />
+                    <option name="lastUsedInstant" value="1780931452" />
                   </RecentBranch>
                   <RecentBranch>
                     <option name="branchName" value="main" />
@@ -88,29 +84,30 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
-    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;feature/txt-provider&quot;,
-    &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/tony/Proyectos/one-thing-extended&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.standard&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.standard&quot;: &quot;&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;npm.lint.executor&quot;: &quot;Run&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.javascript.linters.eslint&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "feature/always-popover-on-click",
+    "javascript.preferred.runtime.type.id": "node",
+    "last_opened_file_path": "/home/tony/Proyectos/one-thing-extended",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.standard": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.standard": "",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "npm.dev.executor": "Run",
+    "npm.lint.executor": "Run",
+    "settings.editor.selected.configurable": "settings.javascript.linters.eslint",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="npm.dev">
     <configuration name="dev" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/package.json" />
@@ -136,13 +133,15 @@
       <list>
         <item itemvalue="npm.dev" />
         <item itemvalue="npm.lint" />
+        <item itemvalue="npm.dev" />
+        <item itemvalue="npm.lint" />
       </list>
     </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.24374.125" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.25134.101" />
       </set>
     </attachedChunks>
   </component>
@@ -163,6 +162,8 @@
       <workItem from="1780693821343" duration="304000" />
       <workItem from="1780695338929" duration="340000" />
       <workItem from="1780695805709" duration="3156000" />
+      <workItem from="1781029416031" duration="983000" />
+      <workItem from="1781121443697" duration="776000" />
     </task>
     <task id="LOCAL-00001" summary="feat(core): restructure extension into modular architecture">
       <option name="closed" value="true" />
@@ -186,8 +187,20 @@
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="feat(core): restructure extension into modular architecture" />
-    <option name="LAST_COMMIT_MESSAGE" value="feat(core): restructure extension into modular architecture" />
+    <MESSAGE value="feat(core): add text file task provider support" />
+    <option name="LAST_COMMIT_MESSAGE" value="feat(core): add text file task provider support" />
   </component>
 </project>

@@ -22,6 +22,10 @@
     <key name="text-file-path" type="s">
       <default>''</default>
     </key>
+    <key name="text-file-preview-limit" type="i">
+      <default>5</default>
+      <range min="1" max="20"/>
+    </key>
     <key name="panel-font-family" type="s">
       <default>''</default>
     </key>

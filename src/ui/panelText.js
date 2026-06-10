@@ -2,19 +2,12 @@ import Clutter from 'gi://Clutter';
 import Gio from 'gi://Gio';
 import St from 'gi://St';
 
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {BoxPointer} from 'resource:///org/gnome/shell/ui/boxpointer.js';
-import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
-
 import {SETTINGS_KEYS} from '../shared/constants.js';
-import {addChild} from './compat.js';
 
 /**
  * @param {object} settings - Extension settings
- * @param {object} actions - Panel text context actions
  */
-export function createPanelText(settings, actions) {
+export function createPanelText(settings) {
     const panelText = new St.Label({
         text: settings.get_string(SETTINGS_KEYS.thingValue),
         track_hover: true,
@@ -23,7 +16,6 @@ export function createPanelText(settings, actions) {
         style_class: 'one-thing-panel-text',
     });
 
-    addPanelTextContextMenu(panelText, actions);
     bindPanelTextStyle(settings, panelText);
 
     settings.bind(
@@ -34,62 +26,6 @@ export function createPanelText(settings, actions) {
     );
 
     return panelText;
-}
-
-/**
- * @param {object} panelText - Panel text label
- * @param {object} actions - Panel text context actions
- */
-function addPanelTextContextMenu(panelText, actions) {
-    const menu = new PopupMenu.PopupMenu(panelText, 0, St.Side.TOP);
-    const menuManager = new PopupMenu.PopupMenuManager(panelText);
-    const openFileItem = new PopupMenu.PopupMenuItem(_('Open file'));
-    const separator = new PopupMenu.PopupSeparatorMenuItem();
-    const settingsItem = new PopupMenu.PopupMenuItem(_('Settings'));
-
-    menuManager.addMenu(menu);
-    menu.addMenuItem(openFileItem);
-    menu.addMenuItem(separator);
-    menu.addMenuItem(settingsItem);
-    addChild(Main.uiGroup, menu.actor);
-    menu.actor.hide();
-
-    openFileItem.connect('activate', () => {
-        menu.close();
-        actions.onOpenFile();
-    });
-    settingsItem.connect('activate', () => {
-        menu.close();
-        actions.onOpenSettings();
-    });
-    panelText.connect('button-press-event', (_actor, event) => {
-        if (event.get_button() !== 3)
-            return Clutter.EVENT_PROPAGATE;
-
-        syncContextMenuVisibility(openFileItem, separator, actions);
-        menu.open(BoxPointer.PopupAnimation.FULL);
-        return Clutter.EVENT_STOP;
-    });
-    panelText.connect('popup-menu', () => {
-        syncContextMenuVisibility(openFileItem, separator, actions);
-        menu.open(BoxPointer.PopupAnimation.FULL);
-        return Clutter.EVENT_STOP;
-    });
-    panelText.connect('destroy', () => {
-        menu.destroy();
-    });
-}
-
-/**
- * @param {object} openFileItem - Open file menu item
- * @param {object} separator - Separator menu item
- * @param {object} actions - Panel text context actions
- */
-function syncContextMenuVisibility(openFileItem, separator, actions) {
-    const canOpenFile = actions.canOpenFile();
-
-    openFileItem.actor.visible = canOpenFile;
-    separator.actor.visible = canOpenFile;
 }
 
 /**

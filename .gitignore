@@ -4,3 +4,4 @@ schemas/gschemas.compiled
 one-thing@github.com
 .DS_Store
 /.codegraph/.gitignore
+/.codegraph/daemon.pid

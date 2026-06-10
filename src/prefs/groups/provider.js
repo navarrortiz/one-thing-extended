@@ -26,10 +26,13 @@ export function createProviderGroup(settings, gettext) {
     });
     const providerRow = createProviderRow(settings, gettext);
     const fileRow = createTextFileRow(settings, gettext);
+    const previewLimitRow = createTextFilePreviewLimitRow(settings, gettext);
     const syncVisibility = () => {
-        fileRow.set_visible(
-            settings.get_string(SETTINGS_KEYS.taskProvider) === TASK_PROVIDERS.textFile
-        );
+        const isTextFileProvider =
+            settings.get_string(SETTINGS_KEYS.taskProvider) === TASK_PROVIDERS.textFile;
+
+        fileRow.set_visible(isTextFileProvider);
+        previewLimitRow.set_visible(isTextFileProvider);
     };
 
     settings.connect(`changed::${SETTINGS_KEYS.taskProvider}`, syncVisibility);
@@ -37,6 +40,7 @@ export function createProviderGroup(settings, gettext) {
 
     group.add(providerRow);
     group.add(fileRow);
+    group.add(previewLimitRow);
 
     return group;
 }
@@ -69,6 +73,29 @@ function createProviderRow(settings, gettext) {
         if (row.get_selected() !== selected)
             row.set_selected(selected);
     });
+
+    return row;
+}
+
+/**
+ * @param {object} settings - Extension settings
+ * @param {Function} gettext - Gettext translation function
+ * @returns {object} Text file preview limit row
+ */
+function createTextFilePreviewLimitRow(settings, gettext) {
+    const row = new Adw.SpinRow({
+        title: gettext('Preview limit'),
+        subtitle: gettext('How many upcoming lines to show in the popover'),
+        adjustment: new Gtk.Adjustment({
+            lower: 1,
+            upper: 20,
+            value: 5,
+            'page-increment': 1,
+            'step-increment': 1,
+        }),
+    });
+
+    settings.bind(SETTINGS_KEYS.textFilePreviewLimit, row, 'value', BindFlags);
 
     return row;
 }

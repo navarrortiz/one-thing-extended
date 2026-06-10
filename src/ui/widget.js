@@ -1,9 +1,9 @@
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {SETTINGS_KEYS} from '../shared/constants.js';
@@ -14,26 +14,20 @@ import {createPopupEntry} from './popupEntry.js';
 const Widget = new GObject.registerClass(
     class Widget extends PanelMenu.Button {
         _init(settings, dir, taskProviderManager) {
-            super._init(0, 'AppWidget', false);
+            super._init(0.5, 'AppWidget', false);
 
             this._settings = settings;
             this._dir = dir;
             this._taskProviderManager = taskProviderManager;
             this._extension = Extension.lookupByURL(import.meta.url);
+            this._textFileLineItems = [];
 
             this._buildUi();
             this._connectEvents();
         }
 
         _buildUi() {
-            this.panelText = createPanelText(
-                this._settings,
-                {
-                    canOpenFile: () => this._taskProviderManager.usesTextFileProvider(),
-                    onOpenFile: () => this._openConfiguredTextFile(),
-                    onOpenSettings: () => this._openPreferences(),
-                }
-            );
+            this.panelText = createPanelText(this._settings);
 
             const {inputText, menuItem} = createPopupEntry(
                 this._settings,
@@ -41,10 +35,51 @@ const Widget = new GObject.registerClass(
             );
 
             this.inputText = inputText;
-            this.menu.addMenuItem(menuItem);
+            this._manualMenuItem = menuItem;
+            this.menu.addMenuItem(this._manualMenuItem);
+            this._buildTextFilePopoverMenu();
             this._buildContainer();
             this.syncProviderMode();
             this.syncIconVisibility(this.panelText.get_text());
+        }
+
+        _buildTextFilePopoverMenu() {
+            this._textFileOpenItem = new PopupMenu.PopupMenuItem('Open text file');
+            this._textFileOpenItem.connect('activate', () => {
+                this._openConfiguredTextFile();
+                this.menu.close();
+            });
+
+            this._textFileTopSeparator = new PopupMenu.PopupSeparatorMenuItem();
+            this._textFileHeaderItem = new PopupMenu.PopupMenuItem('Next Things:', {
+                reactive: false,
+                can_focus: false,
+            });
+
+            for (let index = 0; index < 20; index++) {
+                const lineItem = new PopupMenu.PopupMenuItem('', {
+                    reactive: false,
+                    can_focus: false,
+                });
+
+                this._textFileLineItems.push(lineItem);
+            }
+
+            this._textFileBottomSeparator = new PopupMenu.PopupSeparatorMenuItem();
+            this._textFileSettingsItem = new PopupMenu.PopupMenuItem('Settings');
+            this._textFileSettingsItem.connect('activate', () => {
+                this._openPreferences();
+            });
+
+            this.menu.addMenuItem(this._textFileOpenItem);
+            this.menu.addMenuItem(this._textFileTopSeparator);
+            this.menu.addMenuItem(this._textFileHeaderItem);
+            for (const lineItem of this._textFileLineItems)
+                this.menu.addMenuItem(lineItem);
+            this.menu.addMenuItem(this._textFileBottomSeparator);
+            this.menu.addMenuItem(this._textFileSettingsItem);
+
+            this._setTextFilePopoverVisible(false);
         }
 
         _buildContainer() {
@@ -83,12 +118,8 @@ const Widget = new GObject.registerClass(
             if (!isOpen)
                 return;
 
-            if (!this._taskProviderManager.allowsManualEditing()) {
-                this.menu.close();
-                GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-                    this._openConfiguredTextFile();
-                    return GLib.SOURCE_REMOVE;
-                });
+            if (this._taskProviderManager.isTextFileProvider()) {
+                this._refreshTextFilePopover();
                 return;
             }
 
@@ -116,6 +147,9 @@ const Widget = new GObject.registerClass(
             if (!this.menu.isOpen)
                 return;
 
+            if (!this._taskProviderManager.allowsManualEditing())
+                return;
+
             this.syncProviderMode();
             this.inputText.grab_key_focus();
             this.inputText.set_text(text);
@@ -124,9 +158,12 @@ const Widget = new GObject.registerClass(
         }
 
         syncProviderMode() {
-            this.inputText.clutter_text.set_editable(
-                this._taskProviderManager.allowsManualEditing()
-            );
+            const allowsManualEditing = this._taskProviderManager.allowsManualEditing();
+            const isTextFileProvider = this._taskProviderManager.isTextFileProvider();
+
+            this.inputText.clutter_text.set_editable(allowsManualEditing);
+            setMenuItemVisible(this._manualMenuItem, allowsManualEditing);
+            this._setTextFilePopoverVisible(isTextFileProvider);
         }
 
         syncIconVisibility(text) {
@@ -139,7 +176,53 @@ const Widget = new GObject.registerClass(
         _openConfiguredTextFile() {
             return this._taskProviderManager.openConfiguredTextFile();
         }
+
+        _refreshTextFilePopover() {
+            const previewLimit = this._settings.get_int(SETTINGS_KEYS.textFilePreviewLimit);
+            const popoverData = this._taskProviderManager.getTextFilePopoverData(previewLimit);
+            const fileName = popoverData.fileName || 'text file';
+            const nextThings = popoverData.nextThings.slice(0, previewLimit);
+
+            this._textFileOpenItem.label.set_text(`Open ${fileName}`);
+            this._textFileOpenItem.setSensitive(popoverData.canOpen);
+            this._textFileHeaderItem.label.set_text(`Next ${previewLimit} Things:`);
+
+            for (let index = 0; index < this._textFileLineItems.length; index++) {
+                const item = this._textFileLineItems[index];
+
+                if (index < nextThings.length) {
+                    item.label.set_text(`- ${nextThings[index]}`);
+                    item.show();
+                } else {
+                    item.hide();
+                }
+            }
+        }
+
+        _setTextFilePopoverVisible(visible) {
+            setMenuItemVisible(this._textFileOpenItem, visible);
+            setMenuItemVisible(this._textFileTopSeparator, visible);
+            setMenuItemVisible(this._textFileHeaderItem, visible);
+            setMenuItemVisible(this._textFileBottomSeparator, visible);
+            setMenuItemVisible(this._textFileSettingsItem, visible);
+
+            for (const lineItem of this._textFileLineItems)
+                setMenuItemVisible(lineItem, visible);
+        }
     }
 );
+
+/**
+ * Shows or hides a popup menu item.
+ *
+ * @param {object} item - Popup menu item instance
+ * @param {boolean} visible - Whether the item should be visible
+ */
+function setMenuItemVisible(item, visible) {
+    if (visible)
+        item.show();
+    else
+        item.hide();
+}
 
 export default Widget;

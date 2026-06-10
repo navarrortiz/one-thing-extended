@@ -2,6 +2,7 @@ export const SETTINGS_KEYS = Object.freeze({
     thingValue: 'thing-value',
     taskProvider: 'task-provider',
     textFilePath: 'text-file-path',
+    textFilePreviewLimit: 'text-file-preview-limit',
     panelFontFamily: 'panel-font-family',
     panelFontColor: 'panel-font-color',
     panelFontSize: 'panel-font-size',
