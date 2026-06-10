@@ -33,7 +33,7 @@ export function createPopupEntry(settings, onPreferencesOpen) {
         Gio.SettingsBindFlags.DEFAULT
     );
 
-    addContextMenu(inputText);
+    addContextMenu(inputText, undefined, onPreferencesOpen);
 
     const menuItem = new PopupMenu.PopupBaseMenuItem({
         reactive: false,

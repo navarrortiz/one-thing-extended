@@ -24,7 +24,8 @@ export default class ExtensionController {
         this._panelManager = new PanelManager(
             this._settings,
             this._extension.dir,
-            this._taskProviderManager
+            this._taskProviderManager,
+            () => this._extension.openPreferences()
         );
         this._settingsConnections = new SettingsConnections(this._settings);
 

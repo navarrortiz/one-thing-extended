@@ -84,15 +84,15 @@ class TextFileTaskProvider {
     /**
      * Gets the current thing from the first non-empty line of the configured text file.
      *
-     * @returns {string} Current thing
+     * @returns {Promise<string>} Current thing
      */
-    getCurrentThing() {
+    async getCurrentThing() {
         const file = getConfiguredTextFile(this._settings);
 
         if (!file)
             return '';
 
-        const lines = getNonEmptyLines(file);
+        const lines = await getNonEmptyLines(file);
         const line = lines[0];
 
         return line?.trim() ?? '';
@@ -103,15 +103,15 @@ class TextFileTaskProvider {
      *
      * @param {number} [limit=5] - Maximum number of upcoming lines
      * @param {number} [maxLineLength=90] - Maximum length per line
-     * @returns {string[]} Upcoming non-empty lines excluding the current thing
+     * @returns {Promise<string[]>} Upcoming non-empty lines excluding the current thing
      */
-    getNextThings(limit = 5, maxLineLength = 90) {
+    async getNextThings(limit = 5, maxLineLength = 90) {
         const file = getConfiguredTextFile(this._settings);
 
         if (!file)
             return [];
 
-        const lines = getNonEmptyLines(file);
+        const lines = await getNonEmptyLines(file);
 
         return lines
             .slice(1, limit + 1)
@@ -138,16 +138,35 @@ export function getConfiguredTextFile(settings) {
  * Reads and returns non-empty trimmed lines from a file.
  *
  * @param {Gio.File} file - Source file
- * @returns {string[]} Non-empty trimmed lines
+ * @returns {Promise<string[]>} Non-empty trimmed lines
  */
-function getNonEmptyLines(file) {
-    const [, contents] = file.load_contents(null);
+async function getNonEmptyLines(file) {
+    const contents = await readFileContents(file);
     const text = new TextDecoder('utf-8').decode(contents);
 
     return text
         .split(/\r?\n/)
         .map(value => value.trim())
         .filter(value => value !== '');
+}
+
+/**
+ * Reads file contents asynchronously.
+ *
+ * @param {Gio.File} file - Source file
+ * @returns {Promise<Uint8Array>} File contents bytes
+ */
+function readFileContents(file) {
+    return new Promise((resolve, reject) => {
+        file.load_contents_async(null, (source, result) => {
+            try {
+                const [, contents] = source.load_contents_finish(result);
+                resolve(contents);
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
 }
 
 /**

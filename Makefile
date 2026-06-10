@@ -2,14 +2,14 @@
 
 PREFIX ?= ${HOME}/.local
 
-UUID   ?= one-thing-extended
+UUID   ?= one-thing-extended@navarrortiz.github.io
 BUNDLE = ${UUID}.zip
 
 ASSETS  = $(wildcard assets/*)
 SCHEMAS = $(wildcard schemas/*.gschema.xml)
 MODULES = $(shell find src -type f | sort)
-SOURCES = ${ASSETS} ${SCHEMAS} LICENSE entryMenu.js extension.js \
-	  metadata.json prefs.js prefs/hotkey.js stylesheet.css widget.js ${MODULES}
+SOURCES = ${ASSETS} ${SCHEMAS} LICENSE extension.js \
+	  metadata.json prefs.js stylesheet.css ${MODULES}
 
 ${BUNDLE}: ${SOURCES} schemas/gschemas.compiled
 	rm -f "$@"

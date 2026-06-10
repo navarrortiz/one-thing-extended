@@ -34,7 +34,7 @@ export default class TaskProviderManager {
      */
     sync() {
         this._syncTextFileMonitor();
-        this._syncCurrentThing();
+        void this._syncCurrentThing();
     }
 
     /**
@@ -91,9 +91,17 @@ export default class TaskProviderManager {
      *
      * @param {number} [limit=5] - Maximum number of upcoming lines
      * @param {number} [maxLineLength=90] - Maximum length per line
-     * @returns {{fileName: string, canOpen: boolean, nextThings: string[]}} Popover data
+     * @returns {Promise<{fileName: string, canOpen: boolean, nextThings: string[]}>} Popover data
      */
-    getTextFilePopoverData(limit = 5, maxLineLength = 90) {
+    async getTextFilePopoverData(limit = 5, maxLineLength = 90) {
+        if (!this._settings) {
+            return {
+                fileName: '',
+                canOpen: false,
+                nextThings: [],
+            };
+        }
+
         if (!this.isTextFileProvider()) {
             return {
                 fileName: '',
@@ -125,7 +133,7 @@ export default class TaskProviderManager {
 
         try {
             const provider = createTaskProvider(this._settings);
-            const nextThings = provider.getNextThings(limit, maxLineLength);
+            const nextThings = await provider.getNextThings(limit, maxLineLength);
 
             this._clearLastError();
             return {
@@ -143,13 +151,19 @@ export default class TaskProviderManager {
         }
     }
 
-    _syncCurrentThing() {
+    async _syncCurrentThing() {
+        if (!this._settings)
+            return;
+
         if (this.allowsManualEditing())
             return;
 
         try {
             const provider = createTaskProvider(this._settings);
-            const thingValue = provider.getCurrentThing();
+            const thingValue = await provider.getCurrentThing();
+
+            if (!this._settings)
+                return;
 
             this._setThingValue(thingValue);
             this._clearLastError();
@@ -179,7 +193,7 @@ export default class TaskProviderManager {
         try {
             this._monitor = file.monitor_file(Gio.FileMonitorFlags.NONE, null);
             this._monitorSignalId = this._monitor.connect('changed', () => {
-                this._syncCurrentThing();
+                void this._syncCurrentThing();
             });
             this._clearLastError();
         } catch (error) {

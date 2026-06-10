@@ -13,17 +13,16 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as Params from 'resource:///org/gnome/shell/misc/params.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {BoxPointer} from 'resource:///org/gnome/shell/ui/boxpointer.js';
-import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {addChild} from './compat.js';
 
 export class EntryMenu extends PopupMenu.PopupMenu {
-    constructor(entry) {
+    constructor(entry, onPreferencesOpen) {
         super(entry, 0, St.Side.TOP);
 
         this._entry = entry;
-        this._clipboard = St.Clipboard.get_default();
-        this._extension = Extension.lookupByURL(import.meta.url);
+        this._onPreferencesOpen = onPreferencesOpen;
 
         let item;
 
@@ -39,7 +38,7 @@ export class EntryMenu extends PopupMenu.PopupMenu {
 
         item = new PopupMenu.PopupMenuItem(_('Preferences'));
         item.connect('activate', () => {
-            this._extension.openPreferences();
+            this._onPreferencesOpen();
             entry.menu.close();
         });
         this.addMenuItem(item);
@@ -65,28 +64,19 @@ export class EntryMenu extends PopupMenu.PopupMenu {
     }
 
     _updatePasteItem() {
-        this._clipboard.get_text(St.ClipboardType.CLIPBOARD, (_clipboard, text) => {
-            this._pasteItem.setSensitive(text && text !== '');
-        });
+        this._pasteItem.setSensitive(true);
     }
 
     _onCopyActivated() {
-        let selection = this._entry.clutter_text.get_selection();
-        if (selection.length === 0)
-            selection = this._entry.clutter_text.get_text();
+        if (this._entry.clutter_text.get_selection().length === 0)
+            this._entry.clutter_text.set_selection(-1, 0);
 
-        this._clipboard.set_text(St.ClipboardType.CLIPBOARD, selection);
+        this._entry.clutter_text.copy_clipboard();
     }
 
     _onPasteActivated() {
-        this._clipboard.get_text(St.ClipboardType.CLIPBOARD, (_clipboard, text) => {
-            if (!text)
-                return;
-
-            this._entry.clutter_text.delete_selection();
-            const position = this._entry.clutter_text.get_cursor_position();
-            this._entry.clutter_text.insert_text(text, position);
-        });
+        this._entry.clutter_text.delete_selection();
+        this._entry.clutter_text.paste_clipboard();
     }
 }
 
@@ -138,14 +128,15 @@ function onPopup(_actor, entry) {
 /**
  * @param {object} entry - The St.Entry or St.Label actor
  * @param {object} params - Optional parameters including actionMode
+ * @param {Function} [onPreferencesOpen] - Callback when preferences item is activated
  */
-export function addContextMenu(entry, params) {
+export function addContextMenu(entry, params, onPreferencesOpen = () => {}) {
     if (entry.menu)
         return;
 
     params = Params.parse(params, {actionMode: Shell.ActionMode.POPUP});
 
-    entry.menu = new EntryMenu(entry);
+    entry.menu = new EntryMenu(entry, onPreferencesOpen);
     entry._menuManager = new PopupMenu.PopupMenuManager(entry, {
         actionMode: params.actionMode,
     });

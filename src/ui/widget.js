@@ -4,7 +4,6 @@ import St from 'gi://St';
 
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {SETTINGS_KEYS} from '../shared/constants.js';
 import {addChild} from './compat.js';
@@ -13,14 +12,16 @@ import {createPopupEntry} from './popupEntry.js';
 
 const Widget = new GObject.registerClass(
     class Widget extends PanelMenu.Button {
-        _init(settings, dir, taskProviderManager) {
+        _init(settings, dir, taskProviderManager, onPreferencesOpen) {
             super._init(0.5, 'AppWidget', false);
 
             this._settings = settings;
             this._dir = dir;
             this._taskProviderManager = taskProviderManager;
-            this._extension = Extension.lookupByURL(import.meta.url);
+            this._onPreferencesOpen = onPreferencesOpen;
             this._textFileLineItems = [];
+            this._menuOpenStateChangedSignalId = null;
+            this._inputActivateSignalId = null;
 
             this._buildUi();
             this._connectEvents();
@@ -101,16 +102,30 @@ const Widget = new GObject.registerClass(
         }
 
         _connectEvents() {
-            this.menu.connect('open-state-changed', (_menu, isOpen) => {
+            this._menuOpenStateChangedSignalId = this.menu.connect('open-state-changed', (_menu, isOpen) => {
                 this._onMenuOpenStateChanged(isOpen);
             });
-            this.inputText.clutter_text.connect('activate', actor => {
+            this._inputActivateSignalId = this.inputText.clutter_text.connect('activate', actor => {
                 this._onActivateEntry(actor);
             });
         }
 
+        destroy() {
+            if (this._menuOpenStateChangedSignalId) {
+                this.menu.disconnect(this._menuOpenStateChangedSignalId);
+                this._menuOpenStateChangedSignalId = null;
+            }
+
+            if (this._inputActivateSignalId) {
+                this.inputText.clutter_text.disconnect(this._inputActivateSignalId);
+                this._inputActivateSignalId = null;
+            }
+
+            super.destroy();
+        }
+
         _openPreferences() {
-            this._extension.openPreferences();
+            this._onPreferencesOpen();
             this.menu.close();
         }
 
@@ -119,7 +134,7 @@ const Widget = new GObject.registerClass(
                 return;
 
             if (this._taskProviderManager.isTextFileProvider()) {
-                this._refreshTextFilePopover();
+                void this._refreshTextFilePopover();
                 return;
             }
 
@@ -177,9 +192,13 @@ const Widget = new GObject.registerClass(
             return this._taskProviderManager.openConfiguredTextFile();
         }
 
-        _refreshTextFilePopover() {
+        async _refreshTextFilePopover() {
             const previewLimit = this._settings.get_int(SETTINGS_KEYS.textFilePreviewLimit);
-            const popoverData = this._taskProviderManager.getTextFilePopoverData(previewLimit);
+            const popoverData = await this._taskProviderManager.getTextFilePopoverData(previewLimit);
+
+            if (!this.menu.isOpen || !this._taskProviderManager.isTextFileProvider())
+                return;
+
             const fileName = popoverData.fileName || 'text file';
             const nextThings = popoverData.nextThings.slice(0, previewLimit);
 
