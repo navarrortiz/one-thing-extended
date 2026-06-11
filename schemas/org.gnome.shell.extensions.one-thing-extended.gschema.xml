@@ -19,6 +19,25 @@
     <key name="task-provider" type="s">
       <default>'manual'</default>
     </key>
+    <!-- Persisted current thing execution state across shell/session restarts. -->
+    <key name="execution-state" type="s">
+      <default>'idle'</default>
+    </key>
+    <key name="execution-provider" type="s">
+      <default>''</default>
+    </key>
+    <key name="execution-thing-value" type="s">
+      <default>''</default>
+    </key>
+    <key name="execution-started-at-ms" type="s">
+      <default>'0'</default>
+    </key>
+    <key name="execution-accumulated-ms" type="s">
+      <default>'0'</default>
+    </key>
+    <key name="execution-total-ms" type="s">
+      <default>'0'</default>
+    </key>
     <key name="text-file-path" type="s">
       <default>''</default>
     </key>

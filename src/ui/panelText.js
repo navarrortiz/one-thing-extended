@@ -1,5 +1,4 @@
 import Clutter from 'gi://Clutter';
-import Gio from 'gi://Gio';
 import St from 'gi://St';
 
 import {SETTINGS_KEYS} from '../shared/constants.js';
@@ -17,13 +16,6 @@ export function createPanelText(settings) {
     });
 
     bindPanelTextStyle(settings, panelText);
-
-    settings.bind(
-        SETTINGS_KEYS.thingValue,
-        panelText,
-        'text',
-        Gio.SettingsBindFlags.DEFAULT
-    );
 
     return panelText;
 }
@@ -58,6 +50,17 @@ function bindPanelTextStyle(settings, panelText) {
  * @param {object} panelText - Panel text label
  */
 function syncPanelTextStyle(settings, panelText) {
+    panelText.set_style(getPanelTextStyle(settings));
+}
+
+/**
+ * Builds panel text CSS from settings.
+ *
+ * @param {object} settings - Extension settings
+ * @param {string|null} [colorOverride=null] - Optional CSS color override
+ * @returns {string} CSS style string
+ */
+export function getPanelTextStyle(settings, colorOverride = null) {
     const fontFamily = settings
         .get_string(SETTINGS_KEYS.panelFontFamily)
         .replace(/[\r\n]/g, ' ')
@@ -74,10 +77,12 @@ function syncPanelTextStyle(settings, panelText) {
     if (fontSize > 0)
         styleRules.push(`font-size: ${fontSize}px;`);
 
-    if (isSupportedCssColor(fontColor))
-        styleRules.push(`color: ${fontColor};`);
+    const color = colorOverride ?? fontColor;
 
-    panelText.set_style(styleRules.join(' '));
+    if (isSupportedCssColor(color))
+        styleRules.push(`color: ${color};`);
+
+    return styleRules.join(' ');
 }
 
 /**

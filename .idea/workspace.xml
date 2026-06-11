@@ -4,18 +4,15 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="98b34b25-40da-4eec-8952-6a77094a049c" name="Changes" comment="feat(core): add text file task provider support">
+    <list default="true" id="98b34b25-40da-4eec-8952-6a77094a049c" name="Changes" comment="refactor(core): make task providers and file loading asynchronous&#10;&#10;Refactor task providers to use async/await for file operations and update UI components to handle the asynchronous flow. Introduce a static analysis script and update project configuration files for the release revision.">
+      <change beforePath="$PROJECT_DIR$/.idea/claudeCodeTabState.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/claudeCodeTabState.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/metadata.json" beforeDir="false" afterPath="$PROJECT_DIR$/metadata.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/activate-extension.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/activate-extension.sh" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/extension/controller.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/controller.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/schemas/org.gnome.shell.extensions.one-thing-extended.gschema.xml" beforeDir="false" afterPath="$PROJECT_DIR$/schemas/org.gnome.shell.extensions.one-thing-extended.gschema.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/extension/panelManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/panelManager.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/extension/taskProviderManager.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/taskProviderManager.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/extension/taskProviders.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/extension/taskProviders.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ui/entryMenu.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/entryMenu.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/ui/popupEntry.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/popupEntry.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/shared/constants.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/shared/constants.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/ui/panelText.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/panelText.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/ui/widget.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/ui/widget.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -52,12 +49,12 @@
               <option name="branches">
                 <list>
                   <RecentBranch>
-                    <option name="branchName" value="fix/release-revision" />
-                    <option name="lastUsedInstant" value="1781122300" />
+                    <option name="branchName" value="fueature/thing-execution" />
+                    <option name="lastUsedInstant" value="1781198842" />
                   </RecentBranch>
                   <RecentBranch>
                     <option name="branchName" value="dev" />
-                    <option name="lastUsedInstant" value="1780931452" />
+                    <option name="lastUsedInstant" value="1781198820" />
                   </RecentBranch>
                   <RecentBranch>
                     <option name="branchName" value="main" />
@@ -99,7 +96,7 @@
     &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;SHELLCHECK.PATH&quot;: &quot;/home/tony/.local/share/JetBrains/WebStorm2026.1/Shell Script/shellcheck&quot;,
     &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;fix/release-revision&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;fueature/thing-execution&quot;,
     &quot;javascript.preferred.runtime.type.id&quot;: &quot;node&quot;,
     &quot;last_opened_file_path&quot;: &quot;/home/tony/Proyectos/one-thing-extended&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
@@ -159,10 +156,10 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="npm.dev" />
-        <item itemvalue="npm.lint" />
-        <item itemvalue="npm.lint:fix" />
         <item itemvalue="npm.analyze:static" />
+        <item itemvalue="npm.dev" />
+        <item itemvalue="npm.lint:fix" />
+        <item itemvalue="npm.lint" />
         <item itemvalue="npm.dev" />
       </list>
     </recent_temporary>
@@ -193,6 +190,12 @@
       <workItem from="1780695805709" duration="3156000" />
       <workItem from="1781029416031" duration="983000" />
       <workItem from="1781121443697" duration="776000" />
+      <workItem from="1781186854235" duration="1006000" />
+      <workItem from="1781197772602" duration="2157000" />
+      <workItem from="1781200124910" duration="810000" />
+      <workItem from="1781201286148" duration="303000" />
+      <workItem from="1781201881645" duration="334000" />
+      <workItem from="1781202286045" duration="48000" />
     </task>
     <task id="LOCAL-00001" summary="feat(core): restructure extension into modular architecture">
       <option name="closed" value="true" />

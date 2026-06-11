@@ -1,12 +1,18 @@
 import Gio from 'gi://Gio';
 
-import {SETTINGS_KEYS, TASK_PROVIDERS} from '../shared/constants.js';
+import {SETTINGS_KEYS, TASK_EXECUTION_STATES, TASK_PROVIDERS} from '../shared/constants.js';
 import {
     createTaskProvider,
     getActiveTaskProviderName,
     getConfiguredTextFile,
     isTextFileTaskProvider
 } from './taskProviders.js';
+
+const ACTIVE_EXECUTION_STATES = new Set([
+    TASK_EXECUTION_STATES.running,
+    TASK_EXECUTION_STATES.paused,
+]);
+const VALID_EXECUTION_STATES = new Set(Object.values(TASK_EXECUTION_STATES));
 
 /**
  * Coordinates the active task provider with the existing thing-value setting.
@@ -20,6 +26,7 @@ export default class TaskProviderManager {
         this._monitor = null;
         this._monitorSignalId = null;
         this._lastErrorMessage = null;
+        this._execution = this._loadExecutionState();
     }
 
     /**
@@ -33,6 +40,9 @@ export default class TaskProviderManager {
      * Synchronizes the current provider value and related file monitor.
      */
     sync() {
+        if (this._isExecutionActive() && this._execution.providerName !== getActiveTaskProviderName(this._settings))
+            this._resetExecution(TASK_EXECUTION_STATES.idle);
+
         this._syncTextFileMonitor();
         void this._syncCurrentThing();
     }
@@ -69,6 +79,7 @@ export default class TaskProviderManager {
      */
     destroy() {
         this._disconnectTextFileMonitor();
+        this._persistExecutionState();
         this._settings = null;
     }
 
@@ -84,6 +95,138 @@ export default class TaskProviderManager {
      */
     isTextFileProvider() {
         return isTextFileTaskProvider(this._settings);
+    }
+
+    /**
+     * Starts or resumes execution of the current thing.
+     *
+     * @returns {Promise<object>} Execution state
+     */
+    async startCurrentThing() {
+        if (!this._settings)
+            return this.getCurrentThingExecutionState();
+
+        if (this.allowsManualEditing())
+            throw new Error('Manual provider does not support execution.');
+
+        if (this._execution.state === TASK_EXECUTION_STATES.running)
+            return this.getCurrentThingExecutionState();
+
+        if (this._execution.state === TASK_EXECUTION_STATES.paused) {
+            if (this._execution.conflict)
+                throw new Error(this._execution.errorMessage || 'The active thing changed externally.');
+
+            this._execution.state = TASK_EXECUTION_STATES.running;
+            this._execution.startedAt = Date.now();
+            this._execution.conflict = false;
+            this._execution.errorMessage = '';
+            this._persistExecutionState();
+            return this.getCurrentThingExecutionState();
+        }
+
+        const provider = createTaskProvider(this._settings);
+        const thingValue = await provider.startCurrentThing();
+
+        this._execution = {
+            providerName: getActiveTaskProviderName(this._settings),
+            thingValue,
+            state: TASK_EXECUTION_STATES.running,
+            startedAt: Date.now(),
+            accumulatedMs: 0,
+            totalMs: 0,
+            conflict: false,
+            errorMessage: '',
+        };
+        this._setThingValue(thingValue);
+        this._persistExecutionState();
+        this._clearLastError();
+
+        return this.getCurrentThingExecutionState();
+    }
+
+    /**
+     * Pauses execution of the current thing.
+     *
+     * @returns {Promise<object>} Execution state
+     */
+    async pauseCurrentThing() {
+        if (this._execution.state !== TASK_EXECUTION_STATES.running)
+            return this.getCurrentThingExecutionState();
+
+        const provider = createTaskProvider(this._settings);
+
+        await provider.pauseCurrentThing();
+        this._execution.accumulatedMs = this._getExecutionElapsedMs();
+        this._execution.startedAt = null;
+        this._execution.state = TASK_EXECUTION_STATES.paused;
+        this._persistExecutionState();
+        this._clearLastError();
+
+        return this.getCurrentThingExecutionState();
+    }
+
+    /**
+     * Stops and completes execution of the current thing.
+     *
+     * @returns {Promise<object>} Execution state
+     */
+    async stopCurrentThing() {
+        if (!this._isExecutionActive())
+            throw new Error('No current thing execution is active.');
+
+        if (this._execution.conflict)
+            throw new Error(this._execution.errorMessage || 'The active thing changed externally.');
+
+        const provider = createTaskProvider(this._settings);
+        const elapsedMs = this._getExecutionElapsedMs();
+        const elapsedLabel = formatExecutionElapsedTime(elapsedMs);
+
+        await provider.stopCurrentThing(this._execution.thingValue, elapsedLabel);
+
+        this._resetExecution(TASK_EXECUTION_STATES.stopped, elapsedMs);
+        await this._syncCurrentThing();
+        this._clearLastError();
+
+        return this.getCurrentThingExecutionState();
+    }
+
+    /**
+     * Cancels the current execution without modifying provider data.
+     *
+     * @returns {Promise<object>} Execution state
+     */
+    async discardCurrentThing() {
+        this._resetExecution(TASK_EXECUTION_STATES.idle);
+        await this._syncCurrentThing();
+        this._clearLastError();
+
+        return this.getCurrentThingExecutionState();
+    }
+
+    /**
+     * Gets current execution state for the UI.
+     *
+     * @returns {object} Execution state snapshot
+     */
+    getCurrentThingExecutionState() {
+        const elapsedMs = this._getExecutionElapsedMs();
+
+        return {
+            providerName: this._execution.providerName,
+            thingValue: this._execution.thingValue,
+            state: this._execution.state,
+            elapsedMs,
+            elapsedLabel: formatExecutionElapsedTime(elapsedMs),
+            isActive: this._isExecutionActive(),
+            isRunning: this._execution.state === TASK_EXECUTION_STATES.running,
+            isPaused: this._execution.state === TASK_EXECUTION_STATES.paused,
+            canPlay: this._execution.state !== TASK_EXECUTION_STATES.running,
+            canPause: this._execution.state === TASK_EXECUTION_STATES.running,
+            canStop: this._isExecutionActive() && !this._execution.conflict,
+            canDiscard: this._isExecutionActive(),
+            conflict: this._execution.conflict,
+            errorMessage: this._execution.errorMessage,
+        };
     }
 
     /**
@@ -165,6 +308,11 @@ export default class TaskProviderManager {
             if (!this._settings)
                 return;
 
+            if (this._isExecutionActive()) {
+                this._syncExecutionConflict(thingValue);
+                return;
+            }
+
             this._setThingValue(thingValue);
             this._clearLastError();
         } catch (error) {
@@ -214,6 +362,97 @@ export default class TaskProviderManager {
         this._monitor = null;
     }
 
+    _syncExecutionConflict(thingValue) {
+        if (thingValue === this._execution.thingValue) {
+            this._execution.conflict = false;
+            this._execution.errorMessage = '';
+            return;
+        }
+
+        this._execution.conflict = true;
+        this._execution.errorMessage = 'The text file current thing changed while execution is active.';
+    }
+
+    _getExecutionElapsedMs() {
+        if (this._execution.state === TASK_EXECUTION_STATES.running && this._execution.startedAt)
+            return this._execution.accumulatedMs + (Date.now() - this._execution.startedAt);
+
+        if (this._execution.state === TASK_EXECUTION_STATES.stopped)
+            return this._execution.totalMs;
+
+        return this._execution.accumulatedMs;
+    }
+
+    _isExecutionActive() {
+        return ACTIVE_EXECUTION_STATES.has(this._execution.state);
+    }
+
+    _resetExecution(state, totalMs = 0) {
+        this._execution = this._createExecutionState(state, totalMs);
+        this._persistExecutionState();
+    }
+
+    _createExecutionState(state = TASK_EXECUTION_STATES.idle, totalMs = 0) {
+        return {
+            providerName: '',
+            thingValue: '',
+            state,
+            startedAt: null,
+            accumulatedMs: 0,
+            totalMs,
+            conflict: false,
+            errorMessage: '',
+        };
+    }
+
+    _loadExecutionState() {
+        const state = this._settings.get_string(SETTINGS_KEYS.executionState);
+
+        if (!VALID_EXECUTION_STATES.has(state))
+            return this._createExecutionState();
+
+        const execution = {
+            providerName: this._settings.get_string(SETTINGS_KEYS.executionProvider),
+            thingValue: this._settings.get_string(SETTINGS_KEYS.executionThingValue),
+            state,
+            startedAt: getNumericSetting(this._settings, SETTINGS_KEYS.executionStartedAtMs),
+            accumulatedMs: getNumericSetting(this._settings, SETTINGS_KEYS.executionAccumulatedMs),
+            totalMs: getNumericSetting(this._settings, SETTINGS_KEYS.executionTotalMs),
+            conflict: false,
+            errorMessage: '',
+        };
+
+        if (!this._isPersistedExecutionValid(execution))
+            return this._createExecutionState();
+
+        return execution;
+    }
+
+    _isPersistedExecutionValid(execution) {
+        if (!ACTIVE_EXECUTION_STATES.has(execution.state))
+            return true;
+
+        if (execution.providerName === '' || execution.thingValue === '')
+            return false;
+
+        if (execution.state === TASK_EXECUTION_STATES.running && execution.startedAt <= 0)
+            return false;
+
+        return true;
+    }
+
+    _persistExecutionState() {
+        if (!this._settings)
+            return;
+
+        this._settings.set_string(SETTINGS_KEYS.executionState, this._execution.state);
+        this._settings.set_string(SETTINGS_KEYS.executionProvider, this._execution.providerName);
+        this._settings.set_string(SETTINGS_KEYS.executionThingValue, this._execution.thingValue);
+        this._settings.set_string(SETTINGS_KEYS.executionStartedAtMs, stringifyNumber(this._execution.startedAt));
+        this._settings.set_string(SETTINGS_KEYS.executionAccumulatedMs, stringifyNumber(this._execution.accumulatedMs));
+        this._settings.set_string(SETTINGS_KEYS.executionTotalMs, stringifyNumber(this._execution.totalMs));
+    }
+
     _logProviderError(error) {
         const message = error?.message ?? `${error}`;
 
@@ -227,4 +466,54 @@ export default class TaskProviderManager {
     _clearLastError() {
         this._lastErrorMessage = null;
     }
+}
+
+/**
+ * Formats elapsed execution time for display and done suffixes.
+ *
+ * @param {number} elapsedMs - Elapsed milliseconds
+ * @returns {string} Human readable elapsed time
+ */
+function formatExecutionElapsedTime(elapsedMs) {
+    const totalMinutes = Math.max(0, Math.floor(elapsedMs / 60000));
+
+    if (totalMinutes < 60)
+        return `${totalMinutes} min`;
+
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (minutes === 0)
+        return `${hours}h`;
+
+    return `${hours}h ${minutes}min`;
+}
+
+/**
+ * Gets a persisted non-negative number from a string GSettings key.
+ *
+ * @param {object} settings - Extension settings
+ * @param {string} key - Settings key
+ * @returns {number} Parsed number or zero
+ */
+function getNumericSetting(settings, key) {
+    const value = Number.parseInt(settings.get_string(key), 10);
+
+    if (!Number.isFinite(value) || value < 0)
+        return 0;
+
+    return value;
+}
+
+/**
+ * Converts nullable numbers to persisted string values.
+ *
+ * @param {number|null} value - Number to persist
+ * @returns {string} Persisted string value
+ */
+function stringifyNumber(value) {
+    if (!Number.isFinite(value) || value < 0)
+        return '0';
+
+    return `${Math.floor(value)}`;
 }

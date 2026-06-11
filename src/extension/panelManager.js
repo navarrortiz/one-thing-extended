@@ -57,7 +57,7 @@ export default class PanelManager {
     }
 
     syncPanelTextVisibility() {
-        this._widget?.syncIconVisibility(this._settings.get_string(SETTINGS_KEYS.thingValue));
+        this._widget?.syncPanelTextDisplay();
     }
 
     syncProviderMode() {
