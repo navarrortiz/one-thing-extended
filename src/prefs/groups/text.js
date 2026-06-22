@@ -1,7 +1,7 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 
-import {SETTINGS_KEYS, TASK_PROVIDERS} from '../../shared/constants.js';
+import {SETTINGS_KEYS, THING_PROVIDERS} from '../../shared/constants.js';
 
 const BindFlags = Gio.SettingsBindFlags.DEFAULT;
 
@@ -17,7 +17,7 @@ export function createTextGroup(settings) {
     });
 
     settings.bind(SETTINGS_KEYS.thingValue, entryRow, 'text', BindFlags);
-    settings.connect(`changed::${SETTINGS_KEYS.taskProvider}`, () => {
+    settings.connect(`changed::${SETTINGS_KEYS.thingProvider}`, () => {
         syncManualGroupVisibility(group, settings);
     });
     syncManualGroupVisibility(group, settings);
@@ -32,6 +32,6 @@ export function createTextGroup(settings) {
  */
 function syncManualGroupVisibility(group, settings) {
     group.set_visible(
-        settings.get_string(SETTINGS_KEYS.taskProvider) === TASK_PROVIDERS.manual
+        settings.get_string(SETTINGS_KEYS.thingProvider) === THING_PROVIDERS.manual
     );
 }

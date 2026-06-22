@@ -4,7 +4,7 @@ import {
     writeFileContents
 } from './textFileUtils.js';
 
-export default class TextFileTaskProvider {
+export default class TextFileThingProvider {
     /**
      * @param {object} settings - Extension settings
      */

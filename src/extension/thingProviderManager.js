@@ -1,23 +1,26 @@
 import Gio from 'gi://Gio';
 
-import {SETTINGS_KEYS, TASK_EXECUTION_STATES, TASK_PROVIDERS} from '../shared/constants.js';
+import {SETTINGS_KEYS, THING_EXECUTION_STATES, THING_PROVIDERS} from '../shared/constants.js';
 import {
-    createTaskProvider,
-    getActiveTaskProviderName,
+    createThingProvider,
+    getActiveThingProviderName,
     getConfiguredTextFile,
-    isTextFileTaskProvider
-} from './taskProviders.js';
+    getConfiguredTextFilePath,
+    getTextFileEntries,
+    isTextFileThingProvider,
+    setConfiguredTextFilePath
+} from './thingProviders.js';
 
 const ACTIVE_EXECUTION_STATES = new Set([
-    TASK_EXECUTION_STATES.running,
-    TASK_EXECUTION_STATES.paused,
+    THING_EXECUTION_STATES.running,
+    THING_EXECUTION_STATES.paused,
 ]);
-const VALID_EXECUTION_STATES = new Set(Object.values(TASK_EXECUTION_STATES));
+const VALID_EXECUTION_STATES = new Set(Object.values(THING_EXECUTION_STATES));
 
 /**
- * Coordinates the active task provider with the existing thing-value setting.
+ * Coordinates the active thing provider with the existing thing-value setting.
  */
-export default class TaskProviderManager {
+export default class ThingProviderManager {
     /**
      * @param {object} settings - Extension settings
      */
@@ -40,8 +43,8 @@ export default class TaskProviderManager {
      * Synchronizes the current provider value and related file monitor.
      */
     sync() {
-        if (this._isExecutionActive() && this._execution.providerName !== getActiveTaskProviderName(this._settings))
-            this._resetExecution(TASK_EXECUTION_STATES.idle);
+        if (this._isExecutionActive() && this._execution.providerName !== getActiveThingProviderName(this._settings))
+            this._resetExecution(THING_EXECUTION_STATES.idle);
 
         this._syncTextFileMonitor();
         void this._syncCurrentThing();
@@ -53,7 +56,7 @@ export default class TaskProviderManager {
      * @returns {boolean} True when opening was attempted successfully
      */
     openConfiguredTextFile() {
-        if (!isTextFileTaskProvider(this._settings))
+        if (!isTextFileThingProvider(this._settings))
             return false;
 
         const file = getConfiguredTextFile(this._settings);
@@ -87,14 +90,27 @@ export default class TaskProviderManager {
      * @returns {boolean} True when manual edits should be accepted
      */
     allowsManualEditing() {
-        return getActiveTaskProviderName(this._settings) === TASK_PROVIDERS.manual;
+        return getActiveThingProviderName(this._settings) === THING_PROVIDERS.manual;
     }
 
     /**
      * @returns {boolean} True when text file provider is active
      */
     isTextFileProvider() {
-        return isTextFileTaskProvider(this._settings);
+        return isTextFileThingProvider(this._settings);
+    }
+
+    /**
+     * Sets the active text-file path and synchronizes runtime state.
+     *
+     * @param {string} path - Active text-file path
+     */
+    setActiveTextFilePath(path) {
+        if (!this._settings)
+            return;
+
+        setConfiguredTextFilePath(this._settings, path);
+        this.sync();
     }
 
     /**
@@ -109,14 +125,14 @@ export default class TaskProviderManager {
         if (this.allowsManualEditing())
             throw new Error('Manual provider does not support execution.');
 
-        if (this._execution.state === TASK_EXECUTION_STATES.running)
+        if (this._execution.state === THING_EXECUTION_STATES.running)
             return this.getCurrentThingExecutionState();
 
-        if (this._execution.state === TASK_EXECUTION_STATES.paused) {
+        if (this._execution.state === THING_EXECUTION_STATES.paused) {
             if (this._execution.conflict)
                 throw new Error(this._execution.errorMessage || 'The active thing changed externally.');
 
-            this._execution.state = TASK_EXECUTION_STATES.running;
+            this._execution.state = THING_EXECUTION_STATES.running;
             this._execution.startedAt = Date.now();
             this._execution.conflict = false;
             this._execution.errorMessage = '';
@@ -124,13 +140,14 @@ export default class TaskProviderManager {
             return this.getCurrentThingExecutionState();
         }
 
-        const provider = createTaskProvider(this._settings);
+        const provider = createThingProvider(this._settings);
         const thingValue = await provider.startCurrentThing();
 
         this._execution = {
-            providerName: getActiveTaskProviderName(this._settings),
+            providerName: getActiveThingProviderName(this._settings),
+            filePath: getConfiguredTextFilePath(this._settings),
             thingValue,
-            state: TASK_EXECUTION_STATES.running,
+            state: THING_EXECUTION_STATES.running,
             startedAt: Date.now(),
             accumulatedMs: 0,
             totalMs: 0,
@@ -150,15 +167,15 @@ export default class TaskProviderManager {
      * @returns {Promise<object>} Execution state
      */
     async pauseCurrentThing() {
-        if (this._execution.state !== TASK_EXECUTION_STATES.running)
+        if (this._execution.state !== THING_EXECUTION_STATES.running)
             return this.getCurrentThingExecutionState();
 
-        const provider = createTaskProvider(this._settings);
+        const provider = createThingProvider(this._settings);
 
         await provider.pauseCurrentThing();
         this._execution.accumulatedMs = this._getExecutionElapsedMs();
         this._execution.startedAt = null;
-        this._execution.state = TASK_EXECUTION_STATES.paused;
+        this._execution.state = THING_EXECUTION_STATES.paused;
         this._persistExecutionState();
         this._clearLastError();
 
@@ -177,13 +194,16 @@ export default class TaskProviderManager {
         if (this._execution.conflict)
             throw new Error(this._execution.errorMessage || 'The active thing changed externally.');
 
-        const provider = createTaskProvider(this._settings);
+        if (this._execution.filePath !== getConfiguredTextFilePath(this._settings))
+            throw new Error('The active text file changed while execution is active.');
+
+        const provider = createThingProvider(this._settings);
         const elapsedMs = this._getExecutionElapsedMs();
         const elapsedLabel = formatExecutionElapsedTime(elapsedMs);
 
         await provider.stopCurrentThing(this._execution.thingValue, elapsedLabel);
 
-        this._resetExecution(TASK_EXECUTION_STATES.stopped, elapsedMs);
+        this._resetExecution(THING_EXECUTION_STATES.stopped, elapsedMs);
         await this._syncCurrentThing();
         this._clearLastError();
 
@@ -196,7 +216,7 @@ export default class TaskProviderManager {
      * @returns {Promise<object>} Execution state
      */
     async discardCurrentThing() {
-        this._resetExecution(TASK_EXECUTION_STATES.idle);
+        this._resetExecution(THING_EXECUTION_STATES.idle);
         await this._syncCurrentThing();
         this._clearLastError();
 
@@ -218,10 +238,11 @@ export default class TaskProviderManager {
             elapsedMs,
             elapsedLabel: formatExecutionElapsedTime(elapsedMs),
             isActive: this._isExecutionActive(),
-            isRunning: this._execution.state === TASK_EXECUTION_STATES.running,
-            isPaused: this._execution.state === TASK_EXECUTION_STATES.paused,
-            canPlay: this._execution.state !== TASK_EXECUTION_STATES.running,
-            canPause: this._execution.state === TASK_EXECUTION_STATES.running,
+            filePath: this._execution.filePath,
+            isRunning: this._execution.state === THING_EXECUTION_STATES.running,
+            isPaused: this._execution.state === THING_EXECUTION_STATES.paused,
+            canPlay: this._execution.state !== THING_EXECUTION_STATES.running,
+            canPause: this._execution.state === THING_EXECUTION_STATES.running,
             canStop: this._isExecutionActive() && !this._execution.conflict,
             canDiscard: this._isExecutionActive(),
             conflict: this._execution.conflict,
@@ -234,29 +255,24 @@ export default class TaskProviderManager {
      *
      * @param {number} [limit=5] - Maximum number of upcoming lines
      * @param {number} [maxLineLength=90] - Maximum length per line
-     * @returns {Promise<{fileName: string, canOpen: boolean, nextThings: string[]}>} Popover data
+     * @returns {Promise<object>} Popover data
      */
     async getTextFilePopoverData(limit = 5, maxLineLength = 90) {
-        if (!this._settings) {
-            return {
-                fileName: '',
-                canOpen: false,
-                nextThings: [],
-            };
-        }
+        if (!this._settings)
+            return createEmptyTextFilePopoverData();
 
-        if (!this.isTextFileProvider()) {
-            return {
-                fileName: '',
-                canOpen: false,
-                nextThings: [],
-            };
-        }
+        if (!this.isTextFileProvider())
+            return createEmptyTextFilePopoverData();
+
+        const fileEntries = getTextFileEntries(this._settings);
+        const activePath = getConfiguredTextFilePath(this._settings);
 
         const file = getConfiguredTextFile(this._settings);
 
         if (!file) {
             return {
+                activePath,
+                fileEntries,
                 fileName: '',
                 canOpen: false,
                 nextThings: [],
@@ -268,6 +284,8 @@ export default class TaskProviderManager {
 
         if (!canOpen) {
             return {
+                activePath,
+                fileEntries,
                 fileName,
                 canOpen,
                 nextThings: [],
@@ -275,11 +293,13 @@ export default class TaskProviderManager {
         }
 
         try {
-            const provider = createTaskProvider(this._settings);
+            const provider = createThingProvider(this._settings);
             const nextThings = await provider.getNextThings(limit, maxLineLength);
 
             this._clearLastError();
             return {
+                activePath,
+                fileEntries,
                 fileName,
                 canOpen,
                 nextThings,
@@ -287,6 +307,8 @@ export default class TaskProviderManager {
         } catch (error) {
             this._logProviderError(error);
             return {
+                activePath,
+                fileEntries,
                 fileName,
                 canOpen,
                 nextThings: [],
@@ -302,14 +324,14 @@ export default class TaskProviderManager {
             return;
 
         try {
-            const provider = createTaskProvider(this._settings);
+            const provider = createThingProvider(this._settings);
             const thingValue = await provider.getCurrentThing();
 
             if (!this._settings)
                 return;
 
             if (this._isExecutionActive()) {
-                this._syncExecutionConflict(thingValue);
+                this._syncExecutionConflict(thingValue, getConfiguredTextFilePath(this._settings));
                 return;
             }
 
@@ -330,7 +352,7 @@ export default class TaskProviderManager {
     _syncTextFileMonitor() {
         this._disconnectTextFileMonitor();
 
-        if (!isTextFileTaskProvider(this._settings))
+        if (!isTextFileThingProvider(this._settings))
             return;
 
         const file = getConfiguredTextFile(this._settings);
@@ -362,7 +384,13 @@ export default class TaskProviderManager {
         this._monitor = null;
     }
 
-    _syncExecutionConflict(thingValue) {
+    _syncExecutionConflict(thingValue, filePath) {
+        if (filePath !== this._execution.filePath) {
+            this._execution.conflict = true;
+            this._execution.errorMessage = 'The active text file changed while execution is active.';
+            return;
+        }
+
         if (thingValue === this._execution.thingValue) {
             this._execution.conflict = false;
             this._execution.errorMessage = '';
@@ -374,10 +402,10 @@ export default class TaskProviderManager {
     }
 
     _getExecutionElapsedMs() {
-        if (this._execution.state === TASK_EXECUTION_STATES.running && this._execution.startedAt)
+        if (this._execution.state === THING_EXECUTION_STATES.running && this._execution.startedAt)
             return this._execution.accumulatedMs + (Date.now() - this._execution.startedAt);
 
-        if (this._execution.state === TASK_EXECUTION_STATES.stopped)
+        if (this._execution.state === THING_EXECUTION_STATES.stopped)
             return this._execution.totalMs;
 
         return this._execution.accumulatedMs;
@@ -392,9 +420,10 @@ export default class TaskProviderManager {
         this._persistExecutionState();
     }
 
-    _createExecutionState(state = TASK_EXECUTION_STATES.idle, totalMs = 0) {
+    _createExecutionState(state = THING_EXECUTION_STATES.idle, totalMs = 0) {
         return {
             providerName: '',
+            filePath: '',
             thingValue: '',
             state,
             startedAt: null,
@@ -413,6 +442,7 @@ export default class TaskProviderManager {
 
         const execution = {
             providerName: this._settings.get_string(SETTINGS_KEYS.executionProvider),
+            filePath: getConfiguredTextFilePath(this._settings),
             thingValue: this._settings.get_string(SETTINGS_KEYS.executionThingValue),
             state,
             startedAt: getNumericSetting(this._settings, SETTINGS_KEYS.executionStartedAtMs),
@@ -435,7 +465,7 @@ export default class TaskProviderManager {
         if (execution.providerName === '' || execution.thingValue === '')
             return false;
 
-        if (execution.state === TASK_EXECUTION_STATES.running && execution.startedAt <= 0)
+        if (execution.state === THING_EXECUTION_STATES.running && execution.startedAt <= 0)
             return false;
 
         return true;
@@ -460,12 +490,27 @@ export default class TaskProviderManager {
             return;
 
         this._lastErrorMessage = message;
-        logError(error, 'One Thing task provider error');
+        logError(error, 'One Thing provider error');
     }
 
     _clearLastError() {
         this._lastErrorMessage = null;
     }
+}
+
+/**
+ * Creates empty text-file popover data.
+ *
+ * @returns {object} Empty popover data
+ */
+function createEmptyTextFilePopoverData() {
+    return {
+        activePath: '',
+        fileEntries: [],
+        fileName: '',
+        canOpen: false,
+        nextThings: [],
+    };
 }
 
 /**

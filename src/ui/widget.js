@@ -14,7 +14,7 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {
     EXECUTION_TIMER_INTERVAL_SECONDS,
     SETTINGS_KEYS,
-    TASK_EXECUTION_STATES
+    THING_EXECUTION_STATES
 } from '../shared/constants.js';
 import {addChild} from './compat.js';
 import {createPanelText, getPanelTextStyle} from './panelText.js';
@@ -22,12 +22,12 @@ import {createPopupEntry} from './popupEntry.js';
 
 const Widget = new GObject.registerClass(
     class Widget extends PanelMenu.Button {
-        _init(settings, dir, taskProviderManager, onPreferencesOpen) {
+        _init(settings, dir, thingProviderManager, onPreferencesOpen) {
             super._init(0.5, 'AppWidget', false);
 
             this._settings = settings;
             this._dir = dir;
-            this._taskProviderManager = taskProviderManager;
+            this._thingProviderManager = thingProviderManager;
             this._onPreferencesOpen = onPreferencesOpen;
             this._textFileLineItems = [];
             this._menuOpenStateChangedSignalId = null;
@@ -60,6 +60,7 @@ const Widget = new GObject.registerClass(
         _buildTextFilePopoverMenu() {
             this._buildTextFileExecutionMenu();
 
+            this._textFileActiveFileItem = new PopupMenu.PopupSubMenuMenuItem(_('Active file'));
             this._textFileOpenItem = new PopupMenu.PopupMenuItem(_('Open text file'));
             this._textFileOpenItem.connect('activate', () => {
                 this._openConfiguredTextFile();
@@ -89,6 +90,7 @@ const Widget = new GObject.registerClass(
 
             this.menu.addMenuItem(this._textFileExecutionControlsItem);
             this.menu.addMenuItem(this._textFileExecutionSeparator);
+            this.menu.addMenuItem(this._textFileActiveFileItem);
             this.menu.addMenuItem(this._textFileOpenItem);
             this.menu.addMenuItem(this._textFileTopSeparator);
             this.menu.addMenuItem(this._textFileHeaderItem);
@@ -203,7 +205,7 @@ const Widget = new GObject.registerClass(
             if (!isOpen)
                 return;
 
-            if (this._taskProviderManager.isTextFileProvider()) {
+            if (this._thingProviderManager.isTextFileProvider()) {
                 void this._refreshTextFilePopover();
                 return;
             }
@@ -212,8 +214,8 @@ const Widget = new GObject.registerClass(
         }
 
         _onActivateEntry(actor) {
-            if (!this._taskProviderManager.allowsManualEditing()) {
-                this._taskProviderManager.sync();
+            if (!this._thingProviderManager.allowsManualEditing()) {
+                this._thingProviderManager.sync();
                 this.menu.close();
                 return;
             }
@@ -232,7 +234,7 @@ const Widget = new GObject.registerClass(
             if (!this.menu.isOpen)
                 return;
 
-            if (!this._taskProviderManager.allowsManualEditing())
+            if (!this._thingProviderManager.allowsManualEditing())
                 return;
 
             this.syncProviderMode();
@@ -243,8 +245,8 @@ const Widget = new GObject.registerClass(
         }
 
         syncProviderMode() {
-            const allowsManualEditing = this._taskProviderManager.allowsManualEditing();
-            const isTextFileProvider = this._taskProviderManager.isTextFileProvider();
+            const allowsManualEditing = this._thingProviderManager.allowsManualEditing();
+            const isTextFileProvider = this._thingProviderManager.isTextFileProvider();
 
             this.inputText.clutter_text.set_editable(allowsManualEditing);
             setMenuItemVisible(this._manualMenuItem, allowsManualEditing);
@@ -269,20 +271,21 @@ const Widget = new GObject.registerClass(
         }
 
         _openConfiguredTextFile() {
-            return this._taskProviderManager.openConfiguredTextFile();
+            return this._thingProviderManager.openConfiguredTextFile();
         }
 
         async _refreshTextFilePopover() {
             const previewLimit = this._settings.get_int(SETTINGS_KEYS.textFilePreviewLimit);
-            const popoverData = await this._taskProviderManager.getTextFilePopoverData(previewLimit);
+            const popoverData = await this._thingProviderManager.getTextFilePopoverData(previewLimit);
 
-            if (!this.menu.isOpen || !this._taskProviderManager.isTextFileProvider())
+            if (!this.menu.isOpen || !this._thingProviderManager.isTextFileProvider())
                 return;
 
             const fileName = popoverData.fileName || 'text file';
             const nextThings = popoverData.nextThings.slice(0, previewLimit);
 
             this._refreshExecutionControls();
+            this._refreshTextFileActiveFileMenu(popoverData);
             this._textFileOpenItem.label.set_text(`${_('Open')} ${fileName}`);
             this._textFileOpenItem.setSensitive(popoverData.canOpen);
             this._textFileHeaderItem.label.set_text(`${_('Next')} ${previewLimit} ${_('Things')}:`);
@@ -302,6 +305,7 @@ const Widget = new GObject.registerClass(
         _setTextFilePopoverVisible(visible) {
             setMenuItemVisible(this._textFileExecutionControlsItem, visible);
             setMenuItemVisible(this._textFileExecutionSeparator, visible);
+            setMenuItemVisible(this._textFileActiveFileItem, visible);
             setMenuItemVisible(this._textFileOpenItem, visible);
             setMenuItemVisible(this._textFileTopSeparator, visible);
             setMenuItemVisible(this._textFileHeaderItem, visible);
@@ -312,12 +316,34 @@ const Widget = new GObject.registerClass(
                 setMenuItemVisible(lineItem, visible);
         }
 
+        _refreshTextFileActiveFileMenu(popoverData) {
+            this._textFileActiveFileItem.menu.removeAll();
+
+            if (popoverData.fileEntries.length === 0) {
+                this._textFileActiveFileItem.label.set_text(_('No text files'));
+                this._textFileActiveFileItem.setSensitive(false);
+                return;
+            }
+
+            this._textFileActiveFileItem.setSensitive(true);
+            this._textFileActiveFileItem.label.set_text(`${_('Active file')}: ${popoverData.fileName}`);
+
+            for (const entry of popoverData.fileEntries) {
+                const label = entry.isActive ? `* ${entry.fileName}` : entry.fileName;
+
+                this._textFileActiveFileItem.menu.addAction(label, () => {
+                    this._thingProviderManager.setActiveTextFilePath(entry.path);
+                    void this._refreshTextFilePopover();
+                });
+            }
+        }
+
         async _startCurrentThing() {
-            await this._runExecutionAction(() => this._taskProviderManager.startCurrentThing());
+            await this._runExecutionAction(() => this._thingProviderManager.startCurrentThing());
         }
 
         async _pauseCurrentThing() {
-            await this._runExecutionAction(() => this._taskProviderManager.pauseCurrentThing());
+            await this._runExecutionAction(() => this._thingProviderManager.pauseCurrentThing());
         }
 
         _confirmStopCurrentThing() {
@@ -347,12 +373,12 @@ const Widget = new GObject.registerClass(
         }
 
         async _stopCurrentThing() {
-            await this._runExecutionAction(() => this._taskProviderManager.stopCurrentThing());
+            await this._runExecutionAction(() => this._thingProviderManager.stopCurrentThing());
             void this._refreshTextFilePopover();
         }
 
         async _discardCurrentThing() {
-            await this._runExecutionAction(() => this._taskProviderManager.discardCurrentThing());
+            await this._runExecutionAction(() => this._thingProviderManager.discardCurrentThing());
             void this._refreshTextFilePopover();
         }
 
@@ -370,12 +396,12 @@ const Widget = new GObject.registerClass(
         }
 
         _refreshExecutionControls() {
-            if (!this._taskProviderManager?.isTextFileProvider()) {
+            if (!this._thingProviderManager?.isTextFileProvider()) {
                 this._clearExecutionTimer();
                 return;
             }
 
-            const state = this._taskProviderManager.getCurrentThingExecutionState();
+            const state = this._thingProviderManager.getCurrentThingExecutionState();
 
             setExecutionButtonEnabled(this._textFilePlayButton, state.canPlay && !state.conflict);
             setExecutionButtonEnabled(this._textFilePauseButton, state.canPause);
@@ -386,19 +412,19 @@ const Widget = new GObject.registerClass(
         }
 
         _syncPanelExecutionStatus() {
-            if (!this._taskProviderManager?.isTextFileProvider()) {
+            if (!this._thingProviderManager?.isTextFileProvider()) {
                 this.executionStatusContainer.hide();
                 return;
             }
 
-            const state = this._taskProviderManager.getCurrentThingExecutionState();
+            const state = this._thingProviderManager.getCurrentThingExecutionState();
 
-            if (state.state === TASK_EXECUTION_STATES.running) {
+            if (state.state === THING_EXECUTION_STATES.running) {
                 this._setPanelExecutionStatus('#33d17a', state.elapsedLabel);
                 return;
             }
 
-            if (state.state === TASK_EXECUTION_STATES.paused) {
+            if (state.state === THING_EXECUTION_STATES.paused) {
                 this._setPanelExecutionStatus('#9a9996', state.elapsedLabel);
                 return;
             }
@@ -431,7 +457,7 @@ const Widget = new GObject.registerClass(
                     this._executionTimerId = null;
                     this._refreshExecutionControls();
 
-                    const nextState = this._taskProviderManager.getCurrentThingExecutionState();
+                    const nextState = this._thingProviderManager.getCurrentThingExecutionState();
 
                     if (!nextState.isRunning)
                         return GLib.SOURCE_REMOVE;

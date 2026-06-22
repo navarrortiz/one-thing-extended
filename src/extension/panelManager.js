@@ -14,10 +14,10 @@ const [major] = Config.PACKAGE_VERSION.split('.');
 const GNOME_MAJOR_VERSION = Number.parseInt(major);
 
 export default class PanelManager {
-    constructor(settings, dir, taskProviderManager, onPreferencesOpen) {
+    constructor(settings, dir, thingProviderManager, onPreferencesOpen) {
         this._settings = settings;
         this._dir = dir;
-        this._taskProviderManager = taskProviderManager;
+        this._thingProviderManager = thingProviderManager;
         this._onPreferencesOpen = onPreferencesOpen;
         this._widget = null;
         this._actorAddedSignal = null;
@@ -34,7 +34,7 @@ export default class PanelManager {
         this._widget = new Widget(
             this._settings,
             this._dir,
-            this._taskProviderManager,
+            this._thingProviderManager,
             this._onPreferencesOpen
         );
         Main.panel.addToStatusArea(STATUS_AREA_NAME, this._widget, index, location);

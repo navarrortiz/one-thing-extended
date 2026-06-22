@@ -1,6 +1,6 @@
 import {SETTINGS_KEYS} from '../../shared/constants.js';
 
-export default class ManualTaskProvider {
+export default class ManualThingProvider {
     /**
      * @param {object} settings - Extension settings
      */

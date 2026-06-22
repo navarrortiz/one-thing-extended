@@ -1,6 +1,6 @@
 export const SETTINGS_KEYS = Object.freeze({
     thingValue: 'thing-value',
-    taskProvider: 'task-provider',
+    thingProvider: 'task-provider',
     executionState: 'execution-state',
     executionProvider: 'execution-provider',
     executionThingValue: 'execution-thing-value',
@@ -8,6 +8,8 @@ export const SETTINGS_KEYS = Object.freeze({
     executionAccumulatedMs: 'execution-accumulated-ms',
     executionTotalMs: 'execution-total-ms',
     textFilePath: 'text-file-path',
+    textFilePaths: 'text-file-paths',
+    textFileActivePath: 'text-file-active-path',
     textFilePreviewLimit: 'text-file-preview-limit',
     panelFontFamily: 'panel-font-family',
     panelFontColor: 'panel-font-color',
@@ -18,12 +20,12 @@ export const SETTINGS_KEYS = Object.freeze({
     showSettingsButton: 'show-settings-button-on-popup',
 });
 
-export const TASK_PROVIDERS = Object.freeze({
+export const THING_PROVIDERS = Object.freeze({
     manual: 'manual',
     textFile: 'text-file',
 });
 
-export const TASK_EXECUTION_STATES = Object.freeze({
+export const THING_EXECUTION_STATES = Object.freeze({
     idle: 'idle',
     running: 'running',
     paused: 'paused',
